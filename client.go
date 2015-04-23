@@ -33,14 +33,12 @@ func TopStories() ([]Item, error) {
 	if err := json.Unmarshal(body, &itemids); err != nil {
 		return list, err
 	}
-	log.Printf("Unmarshaled\n")
 	num_stories := 0
 	for _, id := range itemids {
 		it, err := GetItem(id)
 		if err != nil {
 			log.Printf("Failed to get story %d, %s", id, err)
 		}
-		log.Printf("Got story %d", id)
 		list = append(list, it)
 		time.Sleep(timeBetweenReqMs * time.Millisecond)
 		num_stories += 1

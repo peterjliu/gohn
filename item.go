@@ -1,5 +1,7 @@
 package gohn
 
+import "fmt"
+
 type Item struct {
 	By          string `json:"by"`
 	Descendants int    `json:"descendants"`
@@ -18,7 +20,7 @@ type Item struct {
 func (i *Item) PrettyString() string {
 	var p string
 	if i.Type == "story" {
-		p = i.Title
+		p = fmt.Sprintf("%d: %s", i.ID, i.Title)
 	} else {
 		p = "error"
 	}
