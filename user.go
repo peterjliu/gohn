@@ -1,4 +1,4 @@
-package main
+package gohn
 
 type User struct {
 	About     string `json:"about"`

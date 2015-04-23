@@ -14,3 +14,14 @@ type Item struct {
 	Type        string `json:"type"`
 	URL         string `json:"url"`
 }
+
+func (i *Item) PrettyString() string {
+	var p string
+	if i.Type == "story" {
+		p = i.Title
+	} else {
+		p = "error"
+	}
+	return p
+
+}
