@@ -6,10 +6,10 @@ import (
 
 func (i *Item) PrettyString() string {
 	var p string
-	if *i.Type == "story" {
-		p = fmt.Sprintf("%d: %s", *i.Id, *i.Title)
+	if i.GetType() == "story" {
+		p = fmt.Sprintf("%d: %s", i.GetId(), i.GetTitle())
 	} else {
-		p = "error"
+		p = fmt.Sprintf("unsupported type: %s", i.GetType())
 	}
 	return p
 
