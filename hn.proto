@@ -1,0 +1,16 @@
+package gohn;
+
+message Item {
+    optional string by = 1;
+    optional int64 	descendants = 2;
+    optional int64	id        = 3;
+    repeated int64 	kids      = 4;
+    optional int64	parent   = 5;
+    repeated int64 	parts   = 6;
+    optional int64	score  = 7;
+    optional string text = 8;
+    optional int64 time = 9;  // ms since epoch
+    optional string title = 10;
+    optional string type  = 11;
+    optional string url   = 12;
+}
