@@ -2,6 +2,7 @@
 package main
 
 import (
+	"flag"
 	"log"
 	"strconv"
 	"time"
@@ -19,14 +20,18 @@ func check(err error) {
 
 const waitTimeMs = 5
 
+var start = flag.Int("start", 2, "Start item to download")
+var end = flag.Int("end", 100, "End item to download")
+
 func main() {
+	flag.Parse()
 	db, err := leveldb.OpenFile("hackernewsdb", nil)
 	check(err)
 	check(err)
 	defer db.Close()
 	startTime := time.Now()
 	added := 0
-	for i := 500; i < 1000; i++ {
+	for i := *start; i <= *end; i++ {
 		key := []byte(strconv.Itoa(i))
 		exists, err := db.Has(key, nil)
 		check(err)
