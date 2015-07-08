@@ -20,6 +20,9 @@ func jsonBytes(url string) ([]byte, error) {
 	var err error
 	var resp *http.Response
 	for i := 0; i < maxRetries; i++ {
+		if i > 0 {
+			log.Printf("Retrying again %d\n", i)
+		}
 		resp, err = http.Get(url)
 		if err == nil {
 			defer resp.Body.Close()

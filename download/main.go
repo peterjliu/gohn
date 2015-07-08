@@ -1,3 +1,4 @@
+// Downloads hacker news items
 package main
 
 import (
@@ -16,7 +17,7 @@ func check(err error) {
 	}
 }
 
-const waitTimeMs = 100
+const waitTimeMs = 5
 
 func main() {
 	db, err := leveldb.OpenFile("hackernewsdb", nil)
@@ -25,7 +26,7 @@ func main() {
 	defer db.Close()
 	startTime := time.Now()
 	added := 0
-	for i := 2; i < 100; i++ {
+	for i := 500; i < 1000; i++ {
 		key := []byte(strconv.Itoa(i))
 		exists, err := db.Has(key, nil)
 		check(err)
@@ -34,7 +35,16 @@ func main() {
 			continue
 		}
 		it, err := gohn.GetItem(i)
-		check(err)
+		if err != nil {
+			log.Fatal("Failed to get item %d", i)
+		}
+		if it.Title != nil {
+			log.Printf("Title: %s\n", *it.Title)
+		}
+		if it.Text != nil {
+			log.Printf("Text: %s\n", *it.Text)
+
+		}
 		pbmsg, err := proto.Marshal(it)
 		check(err)
 		err = db.Put(key, pbmsg, nil)
@@ -44,4 +54,5 @@ func main() {
 		log.Printf("Added item %d\n", i)
 	}
 	log.Printf("%s\n", time.Since(startTime))
+	log.Printf("%g items per second\n", float64(added)/float64(time.Since(startTime).Seconds()))
 }
