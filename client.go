@@ -13,12 +13,22 @@ const rootUrl = "https://hacker-news.firebaseio.com/v0"
 const maxStories = 10
 const timeBetweenReqMs = 10
 
+const maxRetries = 3
+const between_retries_ms = 100
+
 func jsonBytes(url string) ([]byte, error) {
-	resp, err := http.Get(url)
-	if err != nil {
-		return nil, fmt.Errorf("Failed http Get %s", err)
+	var err error
+	var resp *http.Response
+	for i := 0; i < maxRetries; i++ {
+		resp, err = http.Get(url)
+		if err == nil {
+			defer resp.Body.Close()
+			break
+		}
 	}
-	defer resp.Body.Close()
+	if err != nil {
+		return nil, err
+	}
 	return ioutil.ReadAll(resp.Body)
 }
 
