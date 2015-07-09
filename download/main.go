@@ -3,8 +3,12 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"log"
+	"math"
+	"math/rand"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/golang/protobuf/proto"
@@ -18,45 +22,94 @@ func check(err error) {
 	}
 }
 
-const waitTimeMs = 5
+const waitTimeMeanMs = 10
 
 var start = flag.Int("start", 2, "Start item to download")
 var end = flag.Int("end", 100, "End item to download")
+var numWorkers = flag.Int("numworkers", 50, "Number of concurrent downloads.")
+
+func getItems(in <-chan int, out chan<- *gohn.Item, wg *sync.WaitGroup) {
+	for {
+		waitTime := time.Millisecond * time.Duration(math.Max(100, waitTimeMeanMs*rand.ExpFloat64()))
+		log.Printf("getitems, wait for %s", waitTime)
+		time.Sleep(waitTime)
+		i, more := <-in
+		if more {
+			it, err := gohn.GetItem(i)
+			if err != nil {
+				log.Fatal(fmt.Sprintf("Failed to get item %d", i))
+			}
+			out <- it
+		} else {
+			// channel is depleted
+			wg.Done()
+			return
+		}
+	}
+}
+
+func saveItem(db *leveldb.DB, it *gohn.Item) {
+	pbmsg, err := proto.Marshal(it)
+	check(err)
+	key := []byte(strconv.Itoa(int(it.GetId())))
+	err = db.Put(key, pbmsg, nil)
+	check(err)
+}
+
+func logItem(it *gohn.Item) {
+	log.Printf("Item %d\n", it.GetId())
+	if it.Title != nil {
+		log.Printf("Title: %s\n", it.GetTitle())
+	}
+	if it.Text != nil {
+		log.Printf("Text: %s\n", it.GetText())
+	}
+}
 
 func main() {
 	flag.Parse()
 	db, err := leveldb.OpenFile("hackernewsdb", nil)
 	check(err)
-	check(err)
 	defer db.Close()
+	items := make(chan *gohn.Item)
+	itemqueue := make(chan int)
 	startTime := time.Now()
-	added := 0
-	for i := *start; i <= *end; i++ {
-		key := []byte(strconv.Itoa(i))
-		exists, err := db.Has(key, nil)
-		check(err)
-		if exists {
-			log.Printf("skipping item %d, already in db\n", i)
-			continue
+	log.Println("Before enqueue")
+	go func() {
+		for i := *start; i <= *end; i++ {
+			key := []byte(strconv.Itoa(i))
+			exists, err := db.Has(key, nil)
+			check(err)
+			if exists {
+				log.Printf("skipping item %d, already in db\n", i)
+				continue
+			}
+			log.Printf("enqueue %d\n", i)
+			itemqueue <- i
 		}
-		it, err := gohn.GetItem(i)
-		if err != nil {
-			log.Fatal("Failed to get item %d", i)
-		}
-		if it.Title != nil {
-			log.Printf("Title: %s\n", *it.Title)
-		}
-		if it.Text != nil {
-			log.Printf("Text: %s\n", *it.Text)
+		close(itemqueue)
+	}()
 
-		}
+	added := 0
+	var wg sync.WaitGroup
+	wg.Add(*numWorkers)
+	for i := 0; i < *numWorkers; i++ {
+		go getItems(itemqueue, items, &wg)
+	}
+	go func() {
+		wg.Wait()
+		close(items)
+	}()
+
+	// http://blog.golang.org/pipelines "Sends on a closed channel panic"
+	for it := range items {
+		key := []byte(strconv.Itoa(int(it.GetId())))
 		pbmsg, err := proto.Marshal(it)
-		check(err)
 		err = db.Put(key, pbmsg, nil)
-		added += 1
 		check(err)
-		time.Sleep(time.Millisecond * waitTimeMs)
-		log.Printf("Added item %d\n", i)
+		logItem(it)
+		added += 1
+
 	}
 	log.Printf("%s\n", time.Since(startTime))
 	log.Printf("%g items per second\n", float64(added)/float64(time.Since(startTime).Seconds()))
