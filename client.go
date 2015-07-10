@@ -30,7 +30,7 @@ func jsonBytes(url string) ([]byte, error) {
 			defer resp.Body.Close()
 			break
 		}
-		waitTime := time.Millisecond * time.Duration(i+1) * time.Duration(math.Max(waitTimeMeanMs*rand.ExpFloat64(), 100))
+		waitTime := time.Millisecond * time.Duration(i+1) * time.Duration(math.Min(waitTimeMeanMs*rand.ExpFloat64(), 100))
 		time.Sleep(waitTime)
 	}
 	if err != nil {

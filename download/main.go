@@ -30,7 +30,7 @@ var numWorkers = flag.Int("numworkers", 50, "Number of concurrent downloads.")
 
 func getItems(in <-chan int, out chan<- *gohn.Item, wg *sync.WaitGroup) {
 	for {
-		waitTime := time.Millisecond * time.Duration(math.Max(100, waitTimeMeanMs*rand.ExpFloat64()))
+		waitTime := time.Millisecond * time.Duration(math.Min(100, waitTimeMeanMs*rand.ExpFloat64()))
 		log.Printf("getitems, wait for %s", waitTime)
 		time.Sleep(waitTime)
 		i, more := <-in
