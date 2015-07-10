@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"math"
+	"math/rand"
 	"net/http"
 	"time"
 )
@@ -13,8 +15,8 @@ const rootUrl = "https://hacker-news.firebaseio.com/v0"
 const maxStories = 10
 const timeBetweenReqMs = 10
 
-const maxRetries = 3
-const between_retries_ms = 100
+const maxRetries = 100
+const waitTimeMeanMs = 10
 
 func jsonBytes(url string) ([]byte, error) {
 	var err error
@@ -28,6 +30,8 @@ func jsonBytes(url string) ([]byte, error) {
 			defer resp.Body.Close()
 			break
 		}
+		waitTime := time.Millisecond * time.Duration(i+1) * time.Duration(math.Max(waitTimeMeanMs*rand.ExpFloat64(), 100))
+		time.Sleep(waitTime)
 	}
 	if err != nil {
 		return nil, err
