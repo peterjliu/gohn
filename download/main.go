@@ -84,9 +84,7 @@ func main() {
 				log.Printf("skipping item %d, already in db\n", i)
 				continue
 			}
-			if *verbose {
-				log.Printf("enqueue %d\n", i)
-			}
+			log.Printf("enqueue item %d\n", i)
 			itemqueue <- i
 		}
 		close(itemqueue)
