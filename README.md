@@ -8,4 +8,6 @@ go run download/main.go --start 100 --end 1000 --numworkers=30
 ```
 
 Iterate through the leveldb database and print the text:
+```
 go run readdb/read.go 
+```
