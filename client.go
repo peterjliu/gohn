@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
-	"math"
-	"math/rand"
 	"net/http"
 	"time"
 )
@@ -30,7 +28,7 @@ func jsonBytes(url string) ([]byte, error) {
 			defer resp.Body.Close()
 			break
 		}
-		waitTime := time.Millisecond * time.Duration(i+1) * time.Duration(math.Min(waitTimeMeanMs*rand.ExpFloat64(), 100))
+		waitTime := time.Millisecond * time.Duration(i+1) * ExpWithMax(waitTimeMeanMs, 100.0)
 		time.Sleep(waitTime)
 	}
 	if err != nil {
@@ -39,6 +37,7 @@ func jsonBytes(url string) ([]byte, error) {
 	return ioutil.ReadAll(resp.Body)
 }
 
+// Current top 500 stories
 func TopStories() ([]*Item, error) {
 	body, err := jsonBytes(rootUrl + "/topstories.json")
 	list := make([]*Item, 0, 500)
@@ -67,7 +66,7 @@ func TopStories() ([]*Item, error) {
 	return list, nil
 }
 
-// TODO retry this
+// Get post or comment with given ID
 func GetItem(id int) (*Item, error) {
 	i := Item{}
 	body, err := jsonBytes(fmt.Sprintf("%s/item/%d.json", rootUrl, id))

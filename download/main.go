@@ -1,12 +1,10 @@
-// Downloads hacker news items
+// Concurrently downloads hacker news items.
 package main
 
 import (
 	"flag"
 	"fmt"
 	"log"
-	"math"
-	"math/rand"
 	"strconv"
 	"sync"
 	"time"
@@ -27,11 +25,14 @@ const waitTimeMeanMs = 10
 var start = flag.Int("start", 2, "Start item to download")
 var end = flag.Int("end", 100, "End item to download")
 var numWorkers = flag.Int("numworkers", 50, "Number of concurrent downloads.")
+var verbose = flag.Bool("verbose", false, "print a lot of info to log")
 
 func getItems(in <-chan int, out chan<- *gohn.Item, wg *sync.WaitGroup) {
 	for {
-		waitTime := time.Millisecond * time.Duration(math.Min(100, waitTimeMeanMs*rand.ExpFloat64()))
-		log.Printf("getitems, wait for %s", waitTime)
+		waitTime := time.Millisecond * gohn.ExpWithMax(waitTimeMeanMs, 100.0)
+		if *verbose {
+			log.Printf("getitems, wait for %s", waitTime)
+		}
 		time.Sleep(waitTime)
 		i, more := <-in
 		if more {
@@ -74,7 +75,6 @@ func main() {
 	items := make(chan *gohn.Item)
 	itemqueue := make(chan int)
 	startTime := time.Now()
-	log.Println("Before enqueue")
 	go func() {
 		for i := *start; i <= *end; i++ {
 			key := []byte(strconv.Itoa(i))
@@ -84,7 +84,9 @@ func main() {
 				log.Printf("skipping item %d, already in db\n", i)
 				continue
 			}
-			log.Printf("enqueue %d\n", i)
+			if *verbose {
+				log.Printf("enqueue %d\n", i)
+			}
 			itemqueue <- i
 		}
 		close(itemqueue)
@@ -101,13 +103,14 @@ func main() {
 		close(items)
 	}()
 
-	// http://blog.golang.org/pipelines "Sends on a closed channel panic"
 	for it := range items {
 		key := []byte(strconv.Itoa(int(it.GetId())))
 		pbmsg, err := proto.Marshal(it)
 		err = db.Put(key, pbmsg, nil)
 		check(err)
-		logItem(it)
+		if *verbose {
+			logItem(it)
+		}
 		added += 1
 
 	}
